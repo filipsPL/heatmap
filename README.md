@@ -1,4 +1,16 @@
+# :warning: About this fork
+
+This fork of the great program `heatmap` supports a sqlite database as a data source. Just provide sqlite database file as a data source and add an option to tell the name of the table to use:
+
+```
+--sqlite_table NAME   sqlite table name to read from. lat and lon columns assumed.
+```
+It is assumed that there are `lat` and `lon` columns with lat and lon values.
+
+
 # heatmap
+
+
 
 ## why?
 
