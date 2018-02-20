@@ -21,6 +21,7 @@ python2_tests:
 	python2 test/test_system_gpx.py
 	python2 test/test_system_csv.py
 	python2 test/test_shp_file.py
+	python2 test/test_system_sqlite.py
 	python2 test/test_old_cmdline_support.py
 	pep8 heatmap.py test/*.py
 	pyflakes heatmap.py test/*.py
@@ -38,4 +39,5 @@ python3_tests:
 	python3 test/test_system_gpx.py
 	python2 test/test_system_csv.py
 	python2 test/test_shp_file.py
+	python3 test/test_system_sqlite.py
 	python3 test/test_old_cmdline_support.py

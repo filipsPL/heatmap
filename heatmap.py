@@ -848,6 +848,31 @@ class CSVFileReader(FileReader):
         logging.info('read %d points' % count)
 
 
+class SQLiteReader(FileReader):
+ 
+    def read_file(self, filename):
+
+        import sqlite3
+
+        sqlite_file = filename    # name of the sqlite database file
+        sqlite_table = self.config['sqlite_table']   # name of the table to be queried
+
+        # Connecting to the database file
+        conn = sqlite3.connect(sqlite_file)
+        c = conn.cursor()
+        c.execute('SELECT "lat", "lon" FROM %s' % (sqlite_table))
+        all_rows = c.fetchall()
+        conn.close()
+
+        count = 0
+        for row in all_rows:
+            (lat, lon) = (float(row[0]), float(row[1]))
+            count += 1
+            yield Point(LatLon(lat, lon))
+        logging.info('read %d points' % count)
+
+
+
 class ShapeFileReader(FileReader):
     '''ESRI Shapefile reader'''
     @staticmethod
@@ -900,7 +925,10 @@ class AutoFileReader(FileReader):
     def read_file(self, filename):
         types = {'.shp': ShapeFileReader,
                  '.gpx': GPXFileReader,
-                 '.csv': CSVFileReader}
+                 '.csv': CSVFileReader,
+                 '.sqlite': SQLiteReader,
+                 '.db': SQLiteReader,
+                 }
         try:
             _, ext = os.path.splitext(filename)
             reader_class = types[ext]
@@ -973,6 +1001,7 @@ class Configuration(object):
         # default values.  You can use this ArgumentParser in your own
         # script, perhaps adding your own arguments.
         'argparser': 'ArgumentParser instance for command line processing',
+        'sqlite_table': 'Table name to read from',
     }
 
     _kernels = {'linear': LinearKernel,
@@ -983,6 +1012,8 @@ class Configuration(object):
                   'gpx': GPXFileReader,
                   'csv': CSVFileReader,
                   'shp': ShapeFileReader,
+                  'db': SQLiteReader,
+                  'sqlite': SQLiteReader,
                   'auto': AutoFileReader, }
 
     def __init__(self, use_defaults=True):
@@ -1017,6 +1048,9 @@ class Configuration(object):
         parser.add_argument(
             '--ignore_csv_header', action='store_true',
             help='ignore first line of CSV input files')
+        parser.add_argument(
+            '--sqlite_table', metavar='NAME',
+            help='sqlite table name to read from. lat and lon columns assumed')
         parser.add_argument(
             '-s', '--scale', type=float,
             help='meters per pixel, approximate'),
@@ -1223,19 +1257,21 @@ def main():
     logging.basicConfig(format='%(relativeCreated)8d ms  // %(message)s')
     config = Configuration(use_defaults=False)
     args = config.argparser.parse_args()
-
+    
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if args.load:
+    elif args.load:
         logging.info('loading data')
         matrix = pickle.load(open(args.load, 'rb'))
         config, matrix['config'].argparser = matrix['config'], config.argparser
         del matrix['config']
         config.set_from_options(args)
         config.fill_missing()
+
+
     else:
         config.set_from_options(args)
         config.fill_missing()
